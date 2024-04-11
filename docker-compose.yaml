@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  chat_postgres:
+    image: postgres:latest
+    restart: always
+    container_name: chat_postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root123123
+      POSTGRES_DB: chat
+    ports:
+      - 3306:3306
+    volumes:
+      - postgres-data:/var/lib/postgres
+    networks:
+      - app-tier
+  chat_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: chat_backend
+    container_name: chat_backend
+    env_file:
+      - ./backend/.env.example
+    networks:
+      - app-tier
+    environment:
+      DB_HOST: chat_postgres
+      DB_PORT: 3306
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - chat_postgres
+  chat_frontend:
+    depends_on:
+      - chat_backend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: chat_frontend
+    container_name: chat_frontend
+    env_file:
+      - ./frontend/.env.example
+    ports:
+      - "3000:3000"
+    networks:
+      - app-tier
+
+volumes:
+  postgres-data:
+    driver: local
+networks:
+  app-tier:
+    driver: bridge
